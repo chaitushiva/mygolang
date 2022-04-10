@@ -1,0 +1,91 @@
+7
+
+Difference between new() and make():
+new(T) allocates zeroed storage for a new item of type T and returns its address, a value of type *T: it returns a pointer to a newly allocated zero value of type T, ready for use; it applies to value types like arrays and structs; it is equivalent to &T{ }
+make(T) returns an initialized value of type T; it applies only to the 3 built-in reference types: slices, maps and channels.
+In other words, new allocates; make initializes;
+
+enter image description here
+
+var p *[]int = new([]int)
+or
+// *p == nil; with len and cap 0
+p := new([]int)
+which is only rarely useful.
+
+enter image description here
+
+p := make([]int, 0)
+our slice is initialized, but here points to an empty array.
+
+Both these statements aren't very useful, the following is:
+
+var v []int = make([]int, 10, 50)
+// Or
+v := make([]int, 10, 50)
+This allocates an array of 50 ints and then creates a slice v with length 10 and capacity 50 pointing to the first 10 elements of the array.
+
+Find out some rules for make() and new():
+For slices, maps and channels: use make
+For arrays, structs and all value types: use new
+package main
+type Foo map[string]string
+type Bar struct {
+         s string
+         i int
+}
+func main() {
+         // OK:
+         y := new(Bar)
+         (*y).s = "hello"
+         (*y).i = 1
+
+         // NOT OK:
+         z := make(Bar) // compile error: cannot make type Bar
+         z.s = "hello"
+         z.i = 1
+
+         // OK:
+         x := make(Foo)
+         x["x"] = "goodbye"
+         x["y"] = "world"
+
+         // NOT OK:
+         u := new(Foo)
+         (*u)["x"] = "goodbye" // !!panic!!: runtime error: 
+                   // assignment to entry in nil map
+         (*u)["y"] = "world"
+}
+Channel:
+
+func main() {
+    // OK:
+    ch := make(chan string)
+    go sendData(ch)
+    go getData(ch)
+    time.Sleep(1e9)
+
+    // NOT OK:
+    ch := new(chan string)
+    go sendData(ch) // cannot use ch (variable of type *chan string) 
+                   // as chan string value in argument to sendData
+    go getData(ch)
+    time.Sleep(1e9)
+}
+
+func sendData(ch chan string) {
+    ch <- "Washington"
+    ch <- "Tripoli"
+    ch <- "London"
+    ch <- "Beijing"
+    ch <- "Tokio"
+}
+
+func getData(ch chan string) {
+    var input string
+    for {
+        input = <-ch
+        fmt.Printf("%s ", input)
+
+    }
+}
