@@ -1,0 +1,22 @@
+apiVersion: skaffold/v2beta10
+kind: Config
+
+build:
+  artifacts:
+    - image: healthcheck
+      context: golang
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "*.go"
+            dest: .
+  local: {}
+
+deploy:
+  helm:
+    releases:
+      - name: healthcheck
+        chartPath: healthcheck
+        artifactOverrides:
+          image: healthcheck
